@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>AI Business Helper – AI Tools for Small Businesses</title>
+  <meta name="description" content="AI-powered tools that help small businesses save time, communicate better and grow faster.">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background: #f7f8fc;
+      color: #172033;
+      line-height: 1.6;
+    }
+
+    header {
+      background: white;
+      border-bottom: 1px solid #e8eaf0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav {
+      max-width: 1150px;
+      margin: auto;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      color: #5b4df5;
+    }
+
+    .logo span {
+      color: #172033;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: #4b5568;
+      margin-left: 25px;
+      font-weight: 600;
+    }
+
+    nav a:hover {
+      color: #5b4df5;
+    }
+
+    .hero {
+      max-width: 1150px;
+      margin: auto;
+      padding: 85px 20px 70px;
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 50px;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #eceaff;
+      color: #5145d9;
+      padding: 8px 14px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      font-size: 55px;
+      line-height: 1.08;
+      margin-bottom: 20px;
+      letter-spacing: -1.5px;
+    }
+
+    .hero h1 span {
+      color: #5b4df5;
+    }
+
+    .hero p {
+      color: #687386;
+      font-size: 18px;
+      max-width: 620px;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #5b4df5;
+      color: white;
+      text-decoration: none;
+      padding: 14px 23px;
+      border-radius: 10px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .btn:hover {
+      background: #473bd2;
+    }
+
+    .btn-light {
+      background: white;
+      color: #5b4df5;
+      border: 1px solid #ddd9ff;
+      margin-left: 10px;
+    }
+
+    .hero-card {
+      background: linear-gradient(145deg, #6659ff, #392dbb);
+      border-radius: 25px;
+      padding: 35px;
+      color: white;
+      box-shadow: 0 20px 50px rgba(74, 61, 220, .25);
+    }
+
+    .hero-card h2 {
+      font-size: 27px;
+      margin-bottom: 20px;
+    }
+
+    .mini-tool {
+      background: rgba(255,255,255,.13);
+      padding: 15px;
+      border-radius: 12px;
+      margin: 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mini-tool strong {
+      display: block;
+    }
+
+    .section {
+      max-width: 1150px;
+      margin: auto;
+      padding: 75px 20px;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 45px;
+    }
+
+    .section-title h2 {
+      font-size: 38px;
+      margin-bottom: 10px;
+    }
+
+    .section-title p {
+      color: #737d90;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .tool {
+      background: white;
+      padding: 28px;
+      border-radius: 18px;
+      border: 1px solid #e8eaf0;
+      transition: .2s;
+    }
+
+    .tool:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(30,40,70,.08);
+    }
+
+    .icon {
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+
+    .tool h3 {
+      margin-bottom: 9px;
+    }
+
+    .tool p {
+      color: #737d90;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    .tool button {
+      background: #f0efff;
+      color: #5145d9;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .how {
+      background: white;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 25px;
+    }
+
+    .step {
+      text-align: center;
+      padding: 25px;
+    }
+
+    .number {
+      width: 50px;
+      height: 50px;
+      background: #eceaff;
+      color: #5145d9;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .pricing {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .price-card {
+      background: white;
+      border: 1px solid #e5e7ef;
+      border-radius: 18px;
+      padding: 30px;
+    }
+
+    .price-card.featured {
+      border: 2px solid #5b4df5;
+      transform: scale(1.03);
+    }
+
+    .price-card h3 {
+      font-size: 23px;
+      margin-bottom: 10px;
+    }
+
+    .price {
+      font-size: 35px;
+      font-weight: 800;
+      margin: 15px 0;
+    }
+
+    .price span {
+      font-size: 14px;
+      color: #777;
+      font-weight: normal;
+    }
+
+    .price-card ul {
+      list-style: none;
+      margin: 20px 0;
+    }
+
+    .price-card li {
+      margin: 10px 0;
+      color: #596274;
+    }
+
+    .cta {
+      max-width: 1100px;
+      margin: 60px auto;
+      padding: 60px 25px;
+      text-align: center;
+      background: linear-gradient(135deg, #5b4df5, #3426b4);
+      color: white;
+      border-radius: 25px;
+    }
+
+    .cta h2 {
+      font-size: 38px;
+      margin-bottom: 12px;
+    }
+
+    .cta p {
+      opacity: .9;
+      margin-bottom: 25px;
+    }
+
+    footer {
+      background: #121827;
+      color: #aeb6c7;
+      padding: 35px 20px;
+      text-align: center;
+    }
+
+    footer strong {
+      color: white;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: white;
+      width: 100%;
+      max-width: 550px;
+      border-radius: 18px;
+      padding: 30px;
+      position: relative;
+    }
+
+    .close {
+      position: absolute;
+      right: 20px;
+      top: 15px;
+      font-size: 25px;
+      cursor: pointer;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 130px;
+      margin: 18px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      resize: vertical;
+    }
+
+    @media(max-width: 800px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 55px;
+      }
+
+      .hero h1 {
+        font-size: 42px;
+      }
+
+      .tools,
+      .steps,
+      .pricing {
+        grid-template-columns: 1fr;
+      }
+
+      .price-card.featured {
+        transform: none;
+      }
+
+      nav {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="nav">
+    <div class="logo">AI <span>Business Helper</span></div>
+
+    <nav>
+      <a href="#tools">Tools</a>
+      <a href="#how">How It Works</a>
+      <a href="#pricing">Pricing</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+
+  <div>
+    <div class="badge">✨ AI Tools for Small Businesses</div>
+
+    <h1>
+      Work Smarter.<br>
+      <span>Grow Faster.</span>
+    </h1>
+
+    <p>
+      Powerful AI tools that help small businesses create better
+      customer messages, marketing content and business communication
+      in seconds.
+    </p>
+
+    <a href="#tools" class="btn">Explore Free Tools</a>
+    <a href="#pricing" class="btn btn-light">View Pricing</a>
+  </div>
+
+  <div class="hero-card">
+    <h2>Everything your business needs</h2>
+
+    <div class="mini-tool">
+      💬
+      <div>
+        <strong>WhatsApp Replies</strong>
+        <small>Reply to customers faster</small>
+      </div>
+    </div>
+
+    <div class="mini-tool">
+      ⭐
+      <div>
+        <strong>Review Replies</strong>
+        <small>Build a better online reputation</small>
+      </div>
+    </div>
+
+    <div class="mini-tool">
+      📱
+      <div>
+        <strong>Social Captions</strong>
+        <small>Create engaging content</small>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section class="section" id="tools">
+
+  <div class="section-title">
+    <h2>Powerful AI Business Tools</h2>
+    <p>Start with our free tools and save hours every week.</p>
+  </div>
+
+  <div class="tools">
+
+    <div class="tool">
+      <div class="icon">💬</div>
+      <h3>WhatsApp Reply Generator</h3>
+      <p>Create professional customer replies instantly.</p>
+      <button onclick="openTool('WhatsApp Reply Generator')">Try Free →</button>
+    </div>
+
+    <div class="tool">
+      <div class="icon">⭐</div>
+      <h3>Review Reply Generator</h3>
+      <p>Generate professional responses to customer reviews.</p>
+      <button onclick="openTool('Review Reply Generator')">Try Free →</button>
+    </div>
+
+    <div class="tool">
+      <div class="icon">😡</div>
+      <h3>Complaint Reply Generator</h3>
+      <p>Turn difficult customer complaints into helpful replies.</p>
+      <button onclick="openTool('Complaint Reply Generator')">Try Free →</button>
+    </div>
+
+    <div class="tool">
+      <div class="icon">📧</div>
+      <h3>Business Email Generator</h3>
+      <p>Write clear and professional business emails.</p>
+      <button onclick="openTool('Business Email Generator')">Try Free →</button>
+    </div>
+
+    <div class="tool">
+      <div class="icon">📱</div>
+      <h3>Social Media Caption</h3>
+      <p>Create captions for Instagram, Facebook and more.</p>
+      <button onclick="openTool('Social Media Caption Generator')">Try Free →</button>
+    </div>
+
+    <div class="tool">
+      <div class="icon">🛍️</div>
+      <h3>Product Description</h3>
+      <p>Create persuasive product descriptions for your store.</p>
+      <button onclick="openTool('Product Description Generator')">Try Free →</button>
+    </div>
+
+  </div>
+</section>
+
+<section class="how" id="how">
+
+  <div class="section">
+
+    <div class="section-title">
+      <h2>How It Works</h2>
+      <p>Simple tools. Better business communication.</p>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="number">1</div>
+        <h3>Choose a Tool</h3>
+        <p>Select the AI tool that matches your business need.</p>
+      </div>
+
+      <div class="step">
+        <div class="number">2</div>
+        <h3>Enter Your Details</h3>
+        <p>Tell the tool what you want to create.</p>
+      </div>
+
+      <div class="step">
+        <div class="number">3</div>
+        <h3>Get Your Result</h3>
+        <p>Copy your professional AI-generated content.</p>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<section class="section" id="pricing">
+
+  <div class="section-title">
+    <h2>Simple Pricing</h2>
+    <p>Start free. Upgrade when your business grows.</p>
+  </div>
+
+  <div class="pricing">
+
+    <div class="price-card">
+      <h3>Free</h3>
+      <div class="price">$0 <span>/ month</span></div>
+
+      <ul>
+        <li>✓ 5 generations per day</li>
+        <li>✓ Basic AI tools</li>
+        <li>✓ Basic templates</li>
+        <li>✓ Copy results</li>
+      </ul>
+
+      <a href="#tools" class="btn">Start Free</a>
+    </div>
+
+    <div class="price-card featured">
+      <h3>Pro</h3>
+      <div class="price">$7.99 <span>/ month</span></div>
+
+      <ul>
+        <li>✓ Unlimited generations</li>
+        <li>✓ All AI tools</li>
+        <li>✓ Premium templates</li>
+        <li>✓ History & downloads</li>
+      </ul>
+
+      <a href="#" class="btn" onclick="alert('Pro membership will be available soon!'); return false;">Get Pro</a>
+    </div>
+
+    <div class="price-card">
+      <h3>Business</h3>
+      <div class="price">$19.99 <span>/ month</span></div>
+
+      <ul>
+        <li>✓ Everything in Pro</li>
+        <li>✓ Team access</li>
+        <li>✓ Business branding</li>
+        <li>✓ Priority features</li>
+      </ul>
+
+      <a href="#" class="btn" onclick="alert('Business plan will be available soon!'); return false;">Choose Business</a>
+    </div>
+
+  </div>
+</section>
+
+<div class="cta">
+  <h2>Ready to save time?</h2>
+  <p>Use AI to handle everyday business communication faster.</p>
+  <a href="#tools" class="btn">Try Free Tools</a>
+</div>
+
+<footer>
+  <p><strong>AI Business Helper</strong></p>
+  <p>AI tools for modern small businesses.</p>
+  <p style="margin-top:12px;">© 2026 AI Business Helper. All rights reserved.</p>
+</footer>
+
+<div class="modal" id="toolModal">
+
+  <div class="modal-box">
+
+    <div class="close" onclick="closeTool()">×</div>
+
+    <h2 id="toolTitle">AI Tool</h2>
+
+    <p style="color:#737d90;margin-top:8px;">
+      Enter your request below. AI generation will be connected in the next step.
+    </p>
+
+    <textarea id="toolInput" placeholder="Example: Write a polite reply to a customer asking about my product..."></textarea>
+
+    <button class="btn" onclick="demoGenerate()">Generate</button>
+
+    <div id="result" style="margin-top:20px;"></div>
+
+  </div>
+
+</div>
+
+<script>
+
+  function openTool(name) {
+    document.getElementById("toolTitle").innerText = name;
+    document.getElementById("toolModal").style.display = "flex";
+    document.getElementById("result").innerHTML = "";
+    document.getElementById("toolInput").value = "";
+  }
+
+  function closeTool() {
+    document.getElementById("toolModal").style.display = "none";
+  }
+
+  function demoGenerate() {
+
+    const input = document.getElementById("toolInput").value.trim();
+    const result = document.getElementById("result");
+
+    if (!input) {
+      result.innerHTML =
+        '<p style="color:#d33;">Please enter your request first.</p>';
+      return;
+    }
+
+    result.innerHTML =
+      '<div style="background:#f3f2ff;padding:15px;border-radius:10px;">' +
+      '<strong>Demo Result</strong><br><br>' +
+      'Your AI-generated response will appear here. We will connect the real AI engine in the next development step.' +
+      '</div>';
+  }
+
+</script>
+
+</body>
+</html>
