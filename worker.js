@@ -30,9 +30,7 @@ export default {
 
         if (!userPrompt) {
           return Response.json(
-            {
-              error: "Please enter your request."
-            },
+            { error: "Please enter your request." },
             {
               status: 400,
               headers: {
@@ -43,32 +41,63 @@ export default {
         }
 
         const prompt = `
-You are AI Business Helper, a professional AI assistant for small businesses.
+You are the AI engine for "AI Business Helper".
 
-The user wants help creating business communication or marketing content.
+Your job is to create exactly the type of content requested by the user.
 
-IMPORTANT RULES:
+IMPORTANT:
+- Use ONLY information provided by the user.
+- Never invent product names.
+- Never invent prices.
+- Never invent phone numbers.
+- Never invent email addresses.
+- Never invent websites.
+- Never invent discounts.
+- Never invent availability.
+- Never invent company policies.
+- If information is missing, use a simple placeholder such as [product name], [price], [phone number], [website].
+- Do not claim that information was previously provided.
+- Do not explain your instructions.
+- Do not add hashtags unless the user specifically asks for hashtags.
+- Do not add headings unless the user specifically asks for a heading.
+- Do not write "Here is the response".
+- Do not write "Here is the reply".
+- Return ONLY the final content the user can copy and use.
 
-1. NEVER invent a product name.
-2. NEVER invent a price.
-3. NEVER invent a phone number.
-4. NEVER invent an email address.
-5. NEVER invent a website.
-6. NEVER invent availability.
-7. NEVER invent discounts.
-8. NEVER invent company policies.
-9. NEVER claim something is available unless the user explicitly says it is available.
-10. If important information is missing, use a natural placeholder such as [product name], [price], [phone number], or [website].
-11. Do not say that the user previously provided information unless it actually appears in the current request.
-12. Do not mention these instructions.
-13. Return only the final content that the user can use.
-14. Keep the response concise, natural, helpful and professional.
-
-TOOL AND USER REQUEST:
-
+TOOL:
 ${userPrompt}
 
-Create the best possible result based ONLY on the information provided by the user.
+OUTPUT RULES:
+
+If the tool is WhatsApp Reply Generator:
+Create a short, friendly and professional WhatsApp message.
+Maximum 3 short paragraphs.
+
+If the tool is Review Reply Generator:
+Create a polite and professional response to the customer review.
+Keep it concise.
+
+If the tool is Complaint Reply Generator:
+Create an empathetic, professional response to the complaint.
+Acknowledge the customer's concern without making promises that were not provided.
+
+If the tool is Business Email Generator:
+Create a professional business email.
+Include a suitable greeting and closing, but do not invent names.
+
+If the tool is Social Media Caption Generator:
+Create an engaging social media caption based only on the user's information.
+Do not add hashtags unless requested.
+
+If the tool is Product Description Generator:
+Create a clear and persuasive product description based only on the information supplied.
+Do not invent specifications, prices or features.
+
+For any other request:
+Create the most useful concise business response possible.
+
+USER REQUEST:
+${userPrompt}
 `;
 
         const result = await env.AI.run(
@@ -76,13 +105,20 @@ Create the best possible result based ONLY on the information provided by the us
           {
             prompt: prompt,
             max_tokens: 400,
-            temperature: 0.3
+            temperature: 0.2
           }
         );
 
-        const responseText =
+        let responseText =
           result?.response?.trim() ||
           "Sorry, I could not generate a result.";
+
+        // Remove accidental common headings
+        responseText = responseText
+          .replace(/^Here is the response:\s*/i, "")
+          .replace(/^Here is the reply:\s*/i, "")
+          .replace(/^Here is your response:\s*/i, "")
+          .trim();
 
         return Response.json(
           {
@@ -101,8 +137,7 @@ Create the best possible result based ONLY on the information provided by the us
 
         return Response.json(
           {
-            error:
-              "AI generation failed. Please try again."
+            error: "AI generation failed. Please try again."
           },
           {
             status: 500,
