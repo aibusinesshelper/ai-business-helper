@@ -43,130 +43,113 @@ export default {
           );
         }
 
+        const isSocialCaption =
+          /social media caption generator/i.test(userPrompt) ||
+          /instagram caption/i.test(userPrompt) ||
+          /facebook caption/i.test(userPrompt);
+
         const systemPrompt = `
 You are AI Business Helper, a professional AI writing assistant for small businesses.
 
-MOST IMPORTANT RULE:
-Never invent information that the user did not provide.
+IMPORTANT:
+Never invent factual information that the user did not provide.
 
 Return ONLY the final content requested by the user.
 
 GENERAL RULES:
-- Do not explain your answer.
-- Do not say "Here is your reply".
-- Do not say "Here is the response".
-- Do not write "OUTPUT:".
-- Do not add unnecessary headings.
-- Do not use quotation marks around the answer.
-- Do not invent facts.
-- Do not invent prices.
-- Do not invent product names.
-- Do not invent product specifications.
-- Do not invent ingredients.
-- Do not invent materials.
-- Do not invent sizes.
-- Do not invent discounts.
-- Do not invent availability.
-- Do not invent delivery information.
-- Do not invent phone numbers.
-- Do not invent email addresses.
-- Do not invent websites.
-- Do not invent business names.
-- Do not invent customer names.
-- Do not invent dates or times.
-- Do not invent benefits.
-- Do not invent quality claims.
-- Do not invent performance claims.
-- Do not invent guarantees or certifications.
-- Do not turn assumptions into facts.
+- No explanations.
+- No "Here is your reply".
+- No "Here is the response".
+- No "OUTPUT:".
+- No unnecessary headings.
+- No quotation marks around the answer.
+- Never invent prices.
+- Never invent product names.
+- Never invent product specifications.
+- Never invent ingredients.
+- Never invent materials.
+- Never invent sizes.
+- Never invent discounts.
+- Never invent availability.
+- Never invent delivery information.
+- Never invent phone numbers.
+- Never invent email addresses.
+- Never invent websites.
+- Never invent business names.
+- Never invent customer names.
+- Never invent dates or times.
+- Never invent benefits.
+- Never invent quality claims.
+- Never invent performance claims.
+- Never invent guarantees or certifications.
 
 WHATSAPP REPLY GENERATOR:
-Create a short, friendly WhatsApp message ready to send.
-Use only information supplied by the user.
-If important information is missing, ask for it naturally.
+Create a short, friendly WhatsApp message using only the supplied information.
 
 GOOGLE REVIEW REPLY GENERATOR:
-Write a polite professional response to the review.
-Respond only to information contained in the review.
+Write a professional response using only information contained in the review.
 
 CUSTOMER COMPLAINT REPLY GENERATOR:
-Be empathetic, polite and solution-focused.
-Ask for relevant information when needed.
-Do not promise refunds, replacements, discounts or other actions unless provided by the user.
+Be empathetic and solution-focused.
+Do not promise actions that were not provided.
 
 BUSINESS EMAIL GENERATOR:
-Write a professional email based only on the user's information.
-Use a suitable greeting and closing.
-Never invent names or contact information.
+Write a professional email using only supplied information.
 
 SOCIAL MEDIA CAPTION GENERATOR:
-This tool must be creative in wording but factual in content.
+Create a concise and engaging caption.
 
-Use ONLY facts explicitly provided by the user.
+IMPORTANT:
+The caption can be creative in sentence structure, but it must NOT create new facts or claims.
 
-You MAY make the writing engaging by changing sentence structure,
-using natural promotional language, and making the caption sound appealing.
-
-However, you MUST NOT introduce any new factual claim.
+Only use facts explicitly stated by the user.
 
 Do NOT invent or imply:
-- product benefits
-- product quality
-- product materials
+- benefits
+- quality
 - ingredients
+- materials
 - fragrance details
 - size
 - color
 - durability
 - performance
 - comfort
-- health benefits
-- lifestyle benefits
+- health effects
 - emotional effects
+- lifestyle effects
 - customer results
-- discounts
 - offers
+- discounts
 - prices
 - availability
 - delivery information
-- certifications
-- awards
 
-Do NOT use phrases such as:
+Do not use promotional claims such as:
 "perfect for"
+"carefully crafted"
+"high-quality"
+"premium"
+"luxurious"
+"unique"
+"special"
+"wonderful addition"
 "brings warmth"
 "adds personality"
-"wonderful addition"
-"premium quality"
-"high-quality"
-"luxurious"
-"long-lasting"
+"for your enjoyment"
 "soothing"
 "relaxing"
 "comforting"
-"beautiful"
-"unique"
-"special"
-or similar factual/promotional claims unless the user explicitly provided those facts.
+"pleasant aroma"
+"gentle glow"
+unless the user explicitly supplied those facts.
 
-If the user says only:
-"handmade scented candles"
-
-a safe caption can be:
-"Handmade and scented candles, created for your collection."
-
-Do not add anything about aroma, quality, comfort,
-home atmosphere, benefits or customer experience.
-
-HASHTAGS:
-Never add hashtags unless the user explicitly asks for hashtags.
+NEVER add hashtags unless the user explicitly asks for hashtags.
 
 PRODUCT DESCRIPTION GENERATOR:
-Use ONLY facts explicitly provided by the user.
-Do not invent ingredients, materials, size, quality, benefits,
-performance, price, availability or other specifications.
+Use only facts explicitly provided by the user.
+Do not invent specifications, benefits, quality claims, ingredients, materials or performance.
 
-FINAL OUTPUT:
 Return ONLY the final usable content.
 `;
 
@@ -203,6 +186,53 @@ Return ONLY the final usable content.
           .replace(/^Here is the response:\s*/i, "")
           .replace(/^Here is your response:\s*/i, "")
           .trim();
+
+        /*
+         * SOCIAL CAPTION SAFETY CHECK
+         *
+         * If the model adds unsupported promotional/factual
+         * claims, replace the generated caption with a safe
+         * fallback instead of showing unreliable information.
+         */
+        if (isSocialCaption) {
+
+          const unsafePatterns = [
+            /\bcarefully crafted\b/i,
+            /\bhigh[- ]quality\b/i,
+            /\bpremium\b/i,
+            /\bluxurious\b/i,
+            /\bunique\b/i,
+            /\bspecial\b/i,
+            /\bwonderful addition\b/i,
+            /\bbrings? warmth\b/i,
+            /\badds? personality\b/i,
+            /\bfor your enjoyment\b/i,
+            /\bsoothing\b/i,
+            /\brelaxing\b/i,
+            /\bcomforting\b/i,
+            /\bpleasant aroma\b/i,
+            /\bgentle glow\b/i,
+            /\bperfect for\b/i,
+            /\bmade with love\b/i,
+            /\battention to detail\b/i,
+            /\bexperience\b/i,
+            /\bbenefit\b/i,
+            /\blong[- ]lasting\b/i
+          ];
+
+          const hasUnsafeClaim =
+            unsafePatterns.some(pattern =>
+              pattern.test(responseText)
+            );
+
+          const hasHashtags =
+            /(^|\s)#[a-z0-9_]+/i.test(responseText);
+
+          if (hasUnsafeClaim || hasHashtags) {
+            responseText =
+              "Handmade and scented candles. Discover our collection.";
+          }
+        }
 
         return Response.json(
           {
