@@ -634,10 +634,19 @@
 
   function closeTool() {
     document.getElementById("toolModal").style.display = "none";
+ <script>
+  function openTool(name) {
+    document.getElementById("toolTitle").innerText = name;
+    document.getElementById("toolModal").style.display = "flex";
+    document.getElementById("result").innerHTML = "";
+    document.getElementById("toolInput").value = "";
   }
 
-  function demoGenerate() {
+  function closeTool() {
+    document.getElementById("toolModal").style.display = "none";
+  }
 
+  async function demoGenerate() {
     const input = document.getElementById("toolInput").value.trim();
     const result = document.getElementById("result");
 
@@ -649,11 +658,43 @@
 
     result.innerHTML =
       '<div style="background:#f3f2ff;padding:15px;border-radius:10px;">' +
-      '<strong>Demo Result</strong><br><br>' +
-      'Your AI-generated response will appear here. We will connect the real AI engine in the next development step.' +
+      '<strong>Generating...</strong><br><br>' +
+      'Please wait while AI creates your reply.' +
       '</div>';
-  }
 
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prompt: input
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "AI generation failed.");
+      }
+
+      result.innerHTML =
+        '<div style="background:#f3f2ff;padding:15px;border-radius:10px;">' +
+        '<strong>AI Result</strong><br><br>' +
+        '<div style="white-space:pre-wrap;">' +
+        data.response +
+        '</div>' +
+        '</div>';
+    } catch (error) {
+      result.innerHTML =
+        '<div style="background:#fff0f0;padding:15px;border-radius:10px;color:#c33;">' +
+        '<strong>Something went wrong</strong><br><br>' +
+        error.message +
+        '</div>';
+    }
+  }
+</script>
 </script>
 
 </body>
