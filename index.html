@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>AI Business Helper – AI Tools for Small Businesses</title>
-  <meta name="description" content="AI-powered tools that help small businesses save time, communicate better and grow faster.">
+
+  <meta
+    name="description"
+    content="AI-powered tools that help small businesses save time, communicate better and grow faster."
+  >
 
   <style>
     * {
@@ -213,6 +217,10 @@
       cursor: pointer;
     }
 
+    .tool button:hover {
+      background: #ddd9ff;
+    }
+
     .how {
       background: white;
     }
@@ -336,6 +344,8 @@
       border-radius: 18px;
       padding: 30px;
       position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .close {
@@ -354,6 +364,26 @@
       border: 1px solid #ddd;
       border-radius: 10px;
       resize: vertical;
+      font-size: 15px;
+    }
+
+    .loading {
+      background: #f3f2ff;
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .success {
+      background: #f3f2ff;
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .error {
+      background: #fff0f0;
+      padding: 15px;
+      border-radius: 10px;
+      color: #c33;
     }
 
     @media(max-width: 800px) {
@@ -378,6 +408,11 @@
 
       nav {
         display: none;
+      }
+
+      .btn-light {
+        margin-left: 0;
+        margin-top: 10px;
       }
     }
   </style>
@@ -460,42 +495,54 @@
       <div class="icon">💬</div>
       <h3>WhatsApp Reply Generator</h3>
       <p>Create professional customer replies instantly.</p>
-      <button onclick="openTool('WhatsApp Reply Generator')">Try Free →</button>
+      <button onclick="openTool('WhatsApp Reply Generator')">
+        Try Free →
+      </button>
     </div>
 
     <div class="tool">
       <div class="icon">⭐</div>
       <h3>Review Reply Generator</h3>
       <p>Generate professional responses to customer reviews.</p>
-      <button onclick="openTool('Review Reply Generator')">Try Free →</button>
+      <button onclick="openTool('Review Reply Generator')">
+        Try Free →
+      </button>
     </div>
 
     <div class="tool">
       <div class="icon">😡</div>
       <h3>Complaint Reply Generator</h3>
       <p>Turn difficult customer complaints into helpful replies.</p>
-      <button onclick="openTool('Complaint Reply Generator')">Try Free →</button>
+      <button onclick="openTool('Complaint Reply Generator')">
+        Try Free →
+      </button>
     </div>
 
     <div class="tool">
       <div class="icon">📧</div>
       <h3>Business Email Generator</h3>
       <p>Write clear and professional business emails.</p>
-      <button onclick="openTool('Business Email Generator')">Try Free →</button>
+      <button onclick="openTool('Business Email Generator')">
+        Try Free →
+      </button>
     </div>
 
     <div class="tool">
       <div class="icon">📱</div>
       <h3>Social Media Caption</h3>
       <p>Create captions for Instagram, Facebook and more.</p>
-      <button onclick="openTool('Social Media Caption Generator')">Try Free →</button>
+      <button onclick="openTool('Social Media Caption Generator')">
+        Try Free →
+      </button>
     </div>
 
     <div class="tool">
       <div class="icon">🛍️</div>
       <h3>Product Description</h3>
       <p>Create persuasive product descriptions for your store.</p>
-      <button onclick="openTool('Product Description Generator')">Try Free →</button>
+      <button onclick="openTool('Product Description Generator')">
+        Try Free →
+      </button>
     </div>
 
   </div>
@@ -569,7 +616,13 @@
         <li>✓ History & downloads</li>
       </ul>
 
-      <a href="#" class="btn" onclick="alert('Pro membership will be available soon!'); return false;">Get Pro</a>
+      <a
+        href="#"
+        class="btn"
+        onclick="alert('Pro membership will be available soon!'); return false;"
+      >
+        Get Pro
+      </a>
     </div>
 
     <div class="price-card">
@@ -583,7 +636,13 @@
         <li>✓ Priority features</li>
       </ul>
 
-      <a href="#" class="btn" onclick="alert('Business plan will be available soon!'); return false;">Choose Business</a>
+      <a
+        href="#"
+        class="btn"
+        onclick="alert('Business plan will be available soon!'); return false;"
+      >
+        Choose Business
+      </a>
     </div>
 
   </div>
@@ -598,7 +657,9 @@
 <footer>
   <p><strong>AI Business Helper</strong></p>
   <p>AI tools for modern small businesses.</p>
-  <p style="margin-top:12px;">© 2026 AI Business Helper. All rights reserved.</p>
+  <p style="margin-top:12px;">
+    © 2026 AI Business Helper. All rights reserved.
+  </p>
 </footer>
 
 <div class="modal" id="toolModal">
@@ -610,36 +671,39 @@
     <h2 id="toolTitle">AI Tool</h2>
 
     <p style="color:#737d90;margin-top:8px;">
-      Enter your request below. AI generation will be connected in the next step.
+      Enter your request below and AI will create your result.
     </p>
 
-    <textarea id="toolInput" placeholder="Example: Write a polite reply to a customer asking about my product..."></textarea>
+    <textarea
+      id="toolInput"
+      placeholder="Example: Write a polite reply to a customer asking about my product..."
+    ></textarea>
 
-    <button class="btn" onclick="demoGenerate()">Generate</button>
+    <button class="btn" onclick="demoGenerate()">
+      Generate
+    </button>
 
     <div id="result" style="margin-top:20px;"></div>
 
   </div>
-
 </div>
 
 <script>
 
-  function openTool(name) {
-    document.getElementById("toolTitle").innerText = name;
-    document.getElementById("toolModal").style.display = "flex";
-    document.getElementById("result").innerHTML = "";
-    document.getElementById("toolInput").value = "";
-  }
+  let selectedTool = "";
 
-  function closeTool() {
-    document.getElementById("toolModal").style.display = "none";
- <script>
   function openTool(name) {
+    selectedTool = name;
+
     document.getElementById("toolTitle").innerText = name;
+
     document.getElementById("toolModal").style.display = "flex";
+
     document.getElementById("result").innerHTML = "";
+
     document.getElementById("toolInput").value = "";
+
+    document.getElementById("toolInput").focus();
   }
 
   function closeTool() {
@@ -647,54 +711,126 @@
   }
 
   async function demoGenerate() {
-    const input = document.getElementById("toolInput").value.trim();
-    const result = document.getElementById("result");
+
+    const input =
+      document.getElementById("toolInput").value.trim();
+
+    const result =
+      document.getElementById("result");
 
     if (!input) {
+
       result.innerHTML =
-        '<p style="color:#d33;">Please enter your request first.</p>';
+        '<div class="error">' +
+        '<strong>Please enter your request first.</strong>' +
+        '</div>';
+
       return;
     }
 
     result.innerHTML =
-      '<div style="background:#f3f2ff;padding:15px;border-radius:10px;">' +
+      '<div class="loading">' +
       '<strong>Generating...</strong><br><br>' +
-      'Please wait while AI creates your reply.' +
+      'Please wait while AI creates your result.' +
       '</div>';
 
     try {
+
       const response = await fetch("/api/generate", {
+
         method: "POST",
+
         headers: {
           "Content-Type": "application/json"
         },
+
         body: JSON.stringify({
-          prompt: input
+
+          prompt:
+            "Tool: " +
+            selectedTool +
+            "\n\nUser request:\n" +
+            input
+
         })
+
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "AI generation failed.");
+        throw new Error(
+          data.error || "AI generation failed."
+        );
       }
 
       result.innerHTML =
-        '<div style="background:#f3f2ff;padding:15px;border-radius:10px;">' +
-        '<strong>AI Result</strong><br><br>' +
+        '<div class="success">' +
+        '<strong>AI Result</strong>' +
+        '<br><br>' +
         '<div style="white-space:pre-wrap;">' +
-        data.response +
+        escapeHtml(data.response || "") +
         '</div>' +
+        '<br>' +
+        '<button class="btn" onclick="copyResult()">' +
+        'Copy Result' +
+        '</button>' +
         '</div>';
+
     } catch (error) {
+
       result.innerHTML =
-        '<div style="background:#fff0f0;padding:15px;border-radius:10px;color:#c33;">' +
-        '<strong>Something went wrong</strong><br><br>' +
-        error.message +
+        '<div class="error">' +
+        '<strong>Something went wrong</strong>' +
+        '<br><br>' +
+        escapeHtml(error.message) +
         '</div>';
+
     }
   }
-</script>
+
+  function escapeHtml(text) {
+
+    const div = document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+  }
+
+  function copyResult() {
+
+    const resultText =
+      document.querySelector(
+        "#result .success div"
+      );
+
+    if (!resultText) return;
+
+    navigator.clipboard.writeText(
+      resultText.innerText
+    ).then(function() {
+
+      alert("Result copied!");
+
+    }).catch(function() {
+
+      alert("Please select and copy the result manually.");
+
+    });
+  }
+
+  document.getElementById("toolModal").addEventListener(
+    "click",
+    function(event) {
+
+      if (event.target === this) {
+        closeTool();
+      }
+
+    }
+  );
+
 </script>
 
 </body>
