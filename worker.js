@@ -1,7 +1,27 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    // Paddle webhook endpoint
+    if (url.pathname === "/api/paddle-webhook") {
+      if (request.method !== "POST") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
 
+      try {
+        const payload = await request.json();
+
+        console.log("Paddle webhook received:", payload.event_type);
+
+        return Response.json({
+          success: true
+        });
+      } catch (error) {
+        return Response.json(
+          { error: "Invalid webhook payload" },
+          { status: 400 }
+        );
+      }
+    }
     if (url.pathname === "/api/generate") {
 
       if (request.method === "OPTIONS") {
