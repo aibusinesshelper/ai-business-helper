@@ -746,17 +746,32 @@
    * OPEN PADDLE CHECKOUT
    */
 
-  function openPaddleCheckout(priceId) {
+  async function openPaddleCheckout(priceId) {
 
-    if (
-      !PADDLE_CLIENT_TOKEN
-         ) {
+  if (!PADDLE_CLIENT_TOKEN) {
 
-      alert(
-        "Paddle Client-side Token is not connected yet."
+    alert(
+      "Paddle Client-side Token is not connected yet."
+    );
+
+    return;
+  }
+
+  try {
+
+    const sessionResponse =
+      await fetch("/api/session");
+
+    const sessionData =
+      await sessionResponse.json();
+
+    const userId =
+      sessionData.user_id;
+
+    if (!userId) {
+      throw new Error(
+        "Could not create user session."
       );
-
-      return;
     }
 
     Paddle.Checkout.open({
@@ -765,38 +780,27 @@
           priceId: priceId,
           quantity: 1
         }
-      ]
+      ],
+
+      customData: {
+        user_id: userId
+      }
     });
 
-  }
+  } catch (error) {
 
+    console.error(
+      "Checkout session error:",
+      error
+    );
 
-  /*
-   * AI TOOL
-   */
-
-  let selectedTool = "";
-
-
-  function openTool(name) {
-
-    selectedTool = name;
-
-    document.getElementById("toolTitle").innerText = name;
-
-    document.getElementById("toolModal").style.display = "flex";
-
-    document.getElementById("result").innerHTML = "";
-
-    document.getElementById("toolInput").value = "";
-
-    document.getElementById("toolInput").focus();
+    alert(
+      "Unable to start checkout. Please try again."
+    );
 
   }
 
-
-  function closeTool() {
-
+}
     document.getElementById("toolModal").style.display = "none";
 
   }
