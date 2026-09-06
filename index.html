@@ -11,6 +11,9 @@
     content="AI-powered tools that help small businesses save time, communicate better and grow faster."
   >
 
+  <!-- Paddle.js -->
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+
   <style>
     * {
       margin: 0;
@@ -386,6 +389,12 @@
       color: #c33;
     }
 
+    .payment-note {
+      font-size: 13px;
+      color: #737d90;
+      margin-top: 10px;
+    }
+
     @media(max-width: 800px) {
       .hero {
         grid-template-columns: 1fr;
@@ -433,7 +442,6 @@
 </header>
 
 <section class="hero">
-
   <div>
     <div class="badge">✨ AI Tools for Small Businesses</div>
 
@@ -479,7 +487,6 @@
       </div>
     </div>
   </div>
-
 </section>
 
 <section class="section" id="tools">
@@ -592,8 +599,12 @@
   <div class="pricing">
 
     <div class="price-card">
+
       <h3>Free</h3>
-      <div class="price">$0 <span>/ month</span></div>
+
+      <div class="price">
+        $0 <span>/ month</span>
+      </div>
 
       <ul>
         <li>✓ 5 generations per day</li>
@@ -602,12 +613,19 @@
         <li>✓ Copy results</li>
       </ul>
 
-      <a href="#tools" class="btn">Start Free</a>
+      <a href="#tools" class="btn">
+        Start Free
+      </a>
+
     </div>
 
     <div class="price-card featured">
+
       <h3>Pro</h3>
-      <div class="price">$7.99 <span>/ month</span></div>
+
+      <div class="price">
+        $7.99 <span>/ month</span>
+      </div>
 
       <ul>
         <li>✓ Unlimited generations</li>
@@ -616,18 +634,26 @@
         <li>✓ History & downloads</li>
       </ul>
 
-      <a
-        href="#"
+      <button
         class="btn"
-        onclick="alert('Pro membership will be available soon!'); return false;"
+        onclick="openPaddleCheckout('pri_01m1tpwzvtptdnf37737p07dbg')"
       >
         Get Pro
-      </a>
+      </button>
+
+      <div class="payment-note">
+        Secure checkout powered by Paddle
+      </div>
+
     </div>
 
     <div class="price-card">
+
       <h3>Business</h3>
-      <div class="price">$19.99 <span>/ month</span></div>
+
+      <div class="price">
+        $19.99 <span>/ month</span>
+      </div>
 
       <ul>
         <li>✓ Everything in Pro</li>
@@ -636,13 +662,17 @@
         <li>✓ Priority features</li>
       </ul>
 
-      <a
-        href="#"
+      <button
         class="btn"
-        onclick="alert('Business plan will be available soon!'); return false;"
+        onclick="openPaddleCheckout('pri_01m1tqvehc5sg5k1nqmk5ree3e')"
       >
         Choose Business
-      </a>
+      </button>
+
+      <div class="payment-note">
+        Secure checkout powered by Paddle
+      </div>
+
     </div>
 
   </div>
@@ -657,6 +687,7 @@
 <footer>
   <p><strong>AI Business Helper</strong></p>
   <p>AI tools for modern small businesses.</p>
+
   <p style="margin-top:12px;">
     © 2026 AI Business Helper. All rights reserved.
   </p>
@@ -690,9 +721,66 @@
 
 <script>
 
+  /*
+   * PADDLE SANDBOX
+   *
+   * IMPORTANT:
+   * Replace ONLY the text below with your copied
+   * Paddle Client-side Token.
+   *
+   * It should start with:
+   * test_
+   */
+
+  const PADDLE_CLIENT_TOKEN =
+    "test_8f272632a66c7d0c2fc7816617c";
+
+  Paddle.Environment.set("sandbox");
+
+  Paddle.Initialize({
+    token: PADDLE_CLIENT_TOKEN
+  });
+
+
+  /*
+   * OPEN PADDLE CHECKOUT
+   */
+
+  function openPaddleCheckout(priceId) {
+
+    if (
+      !PADDLE_CLIENT_TOKEN ||
+      PADDLE_CLIENT_TOKEN === "test_8f272632a66c7d0c2fc7816617c"
+    ) {
+
+      alert(
+        "Paddle Client-side Token is not connected yet."
+      );
+
+      return;
+    }
+
+    Paddle.Checkout.open({
+      items: [
+        {
+          priceId: priceId,
+          quantity: 1
+        }
+      ]
+    });
+
+  }
+
+
+  /*
+   * AI TOOL
+   */
+
   let selectedTool = "";
 
+
   function openTool(name) {
+
     selectedTool = name;
 
     document.getElementById("toolTitle").innerText = name;
@@ -704,11 +792,16 @@
     document.getElementById("toolInput").value = "";
 
     document.getElementById("toolInput").focus();
+
   }
 
+
   function closeTool() {
+
     document.getElementById("toolModal").style.display = "none";
+
   }
+
 
   async function demoGenerate() {
 
@@ -718,6 +811,7 @@
     const result =
       document.getElementById("result");
 
+
     if (!input) {
 
       result.innerHTML =
@@ -726,13 +820,16 @@
         '</div>';
 
       return;
+
     }
+
 
     result.innerHTML =
       '<div class="loading">' +
       '<strong>Generating...</strong><br><br>' +
       'Please wait while AI creates your result.' +
       '</div>';
+
 
     try {
 
@@ -756,13 +853,18 @@
 
       });
 
+
       const data = await response.json();
 
+
       if (!response.ok) {
+
         throw new Error(
           data.error || "AI generation failed."
         );
+
       }
+
 
       result.innerHTML =
         '<div class="success">' +
@@ -777,6 +879,7 @@
         '</button>' +
         '</div>';
 
+
     } catch (error) {
 
       result.innerHTML =
@@ -787,7 +890,9 @@
         '</div>';
 
     }
+
   }
+
 
   function escapeHtml(text) {
 
@@ -796,7 +901,9 @@
     div.textContent = text;
 
     return div.innerHTML;
+
   }
+
 
   function copyResult() {
 
@@ -805,7 +912,9 @@
         "#result .success div"
       );
 
+
     if (!resultText) return;
+
 
     navigator.clipboard.writeText(
       resultText.innerText
@@ -815,17 +924,23 @@
 
     }).catch(function() {
 
-      alert("Please select and copy the result manually.");
+      alert(
+        "Please select and copy the result manually."
+      );
 
     });
+
   }
+
 
   document.getElementById("toolModal").addEventListener(
     "click",
     function(event) {
 
       if (event.target === this) {
+
         closeTool();
+
       }
 
     }
