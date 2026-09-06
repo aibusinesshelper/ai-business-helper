@@ -1,27 +1,255 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    // Paddle webhook endpoint
+
+    /*
+     * ============================================================
+     * PADDLE WEBHOOK
+     * ============================================================
+     */
+
     if (url.pathname === "/api/paddle-webhook") {
       if (request.method !== "POST") {
-        return new Response("Method Not Allowed", { status: 405 });
+        return new Response("Method Not Allowed", {
+          status: 405
+        });
       }
 
       try {
-        const payload = await request.json();
+        const secret = env.PADDLE_WEBHOOK_SECRET;
 
-        console.log("Paddle webhook received:", payload.event_type);
+        if (!secret) {
+          console.error("PADDLE_WEBHOOK_SECRET is missing");
 
-        return Response.json({
-          success: true
-        });
-      } catch (error) {
+          return Response.json(
+            { error: "Webhook secret is not configured" },
+            { status: 500 }
+          );
+        }
+
+        /*
+         * IMPORTANT:
+         * Paddle signature verification requires the RAW body.
+         * Do not use request.json() before verification.
+         */
+
+        const rawBody = await request.text();
+
+        const signatureHeader =
+          request.headers.get("Paddle-Signature");
+
+        if (!signatureHeader) {
+          return Response.json(
+            { error: "Missing Paddle-Signature header" },
+            { status: 401 }
+          );
+        }
+
+        /*
+         * Paddle-Signature format:
+         * ts=UNIX_TIMESTAMP;h1=HEX_SIGNATURE
+         */
+
+        let timestamp = "";
+        let signature = "";
+
+        for (const part of signatureHeader.split(";")) {
+          const separator = part.indexOf("=");
+
+          if (separator === -1) continue;
+
+          const key = part.slice(0, separator);
+          const value = part.slice(separator + 1);
+
+          if (key === "ts") {
+            timestamp = value;
+          }
+
+          if (key === "h1") {
+            signature = value;
+          }
+        }
+
+        if (!timestamp || !signature) {
+          return Response.json(
+            { error: "Invalid Paddle-Signature header" },
+            { status: 401 }
+          );
+        }
+
+        /*
+         * Reject very old webhook requests.
+         * Paddle recommends a short timestamp tolerance
+         * to protect against replay attacks.
+         */
+
+        const currentTime = Math.floor(Date.now() / 1000);
+        const webhookTime = Number(timestamp);
+
+        if (
+          !Number.isFinite(webhookTime) ||
+          Math.abs(currentTime - webhookTime) > 300
+        ) {
+          return Response.json(
+            { error: "Webhook timestamp expired" },
+            { status: 408 }
+          );
+        }
+
+        /*
+         * Build the signed payload:
+         * timestamp + ":" + raw body
+         */
+
+        const signedPayload = `${timestamp}:${rawBody}`;
+
+        /*
+         * HMAC SHA-256
+         */
+
+        const keyData = new TextEncoder().encode(secret);
+        const messageData = new TextEncoder().encode(signedPayload);
+
+        const cryptoKey = await crypto.subtle.importKey(
+          "raw",
+          keyData,
+          {
+            name: "HMAC",
+            hash: "SHA-256"
+          },
+          false,
+          ["sign"]
+        );
+
+        const signatureBuffer = await crypto.subtle.sign(
+          "HMAC",
+          cryptoKey,
+          messageData
+        );
+
+        const computedSignature = Array.from(
+          new Uint8Array(signatureBuffer)
+        )
+          .map(b => b.toString(16).padStart(2, "0"))
+          .join("");
+
+        /*
+         * Timing-safe comparison
+         */
+
+        if (
+          computedSignature.length !== signature.length
+        ) {
+          return Response.json(
+            { error: "Invalid signature" },
+            { status: 401 }
+          );
+        }
+
+        let difference = 0;
+
+        for (let i = 0; i < computedSignature.length; i++) {
+          difference |=
+            computedSignature.charCodeAt(i) ^
+            signature.charCodeAt(i);
+        }
+
+        if (difference !== 0) {
+          return Response.json(
+            { error: "Invalid signature" },
+            { status: 401 }
+          );
+        }
+
+        /*
+         * Signature is valid.
+         * Now we can safely parse the webhook.
+         */
+
+        const payload = JSON.parse(rawBody);
+
+        const eventType = payload.event_type;
+        const data = payload.data || {};
+
+        console.log(
+          "Verified Paddle webhook:",
+          eventType
+        );
+
+        /*
+         * Store subscription information.
+         *
+         * We use the existing AI_LIMITS KV namespace for now.
+         * This records the authoritative Paddle subscription
+         * status for future Pro access handling.
+         */
+
+        if (
+          eventType === "subscription.created" ||
+          eventType === "subscription.activated" ||
+          eventType === "subscription.updated" ||
+          eventType === "subscription.canceled"
+        ) {
+          const subscriptionId = data.id;
+
+          if (subscriptionId) {
+            const subscriptionRecord = {
+              subscriptionId: subscriptionId,
+              customerId: data.customer_id || null,
+              status: data.status || null,
+              priceId:
+                data.items?.[0]?.price?.id || null,
+              productId:
+                data.items?.[0]?.price?.product_id || null,
+              customData: data.custom_data || null,
+              updatedAt: new Date().toISOString()
+            };
+
+            await env.AI_LIMITS.put(
+              `paddle:subscription:${subscriptionId}`,
+              JSON.stringify(subscriptionRecord)
+            );
+          }
+        }
+
+        /*
+         * Paddle expects a successful HTTP 200 response.
+         */
+
         return Response.json(
-          { error: "Invalid webhook payload" },
-          { status: 400 }
+          {
+            success: true,
+            received: true,
+            event_type: eventType
+          },
+          {
+            status: 200
+          }
+        );
+
+      } catch (error) {
+        console.error(
+          "Paddle webhook processing failed:",
+          error
+        );
+
+        return Response.json(
+          {
+            error: "Webhook processing failed"
+          },
+          {
+            status: 500
+          }
         );
       }
     }
+
+    /*
+     * ============================================================
+     * AI GENERATION API
+     * ============================================================
+     */
+
     if (url.pathname === "/api/generate") {
 
       if (request.method === "OPTIONS") {
@@ -53,7 +281,9 @@ export default {
 
         if (!userPrompt) {
           return Response.json(
-            { error: "Please enter your request." },
+            {
+              error: "Please enter your request."
+            },
             {
               status: 400,
               headers: {
@@ -69,26 +299,36 @@ export default {
          */
 
         const ip =
-          request.headers.get("CF-Connecting-IP") || "unknown";
+          request.headers.get("CF-Connecting-IP") ||
+          "unknown";
 
-        const day = new Date().toISOString().slice(0, 10);
+        const day =
+          new Date().toISOString().slice(0, 10);
 
-        const rawKey = `free:${ip}:${day}`;
+        const rawKey =
+          `free:${ip}:${day}`;
 
-        const digest = await crypto.subtle.digest(
-          "SHA-256",
-          new TextEncoder().encode(rawKey)
-        );
+        const digest =
+          await crypto.subtle.digest(
+            "SHA-256",
+            new TextEncoder().encode(rawKey)
+          );
 
-        const hash = Array.from(new Uint8Array(digest))
-          .map(b => b.toString(16).padStart(2, "0"))
-          .join("");
+        const hash =
+          Array.from(new Uint8Array(digest))
+            .map(
+              b => b.toString(16).padStart(2, "0")
+            )
+            .join("");
 
-        const usageKey = `usage:${hash}`;
+        const usageKey =
+          `usage:${hash}`;
 
-        let count = Number(
-          await env.AI_LIMITS.get(usageKey) || "0"
-        );
+        let count =
+          Number(
+            await env.AI_LIMITS.get(usageKey) ||
+            "0"
+          );
 
         if (count >= 5) {
           return Response.json(
@@ -107,9 +347,15 @@ export default {
         }
 
         const isSocialCaption =
-          /social media caption generator/i.test(userPrompt) ||
-          /instagram caption/i.test(userPrompt) ||
-          /facebook caption/i.test(userPrompt);
+          /social media caption generator/i.test(
+            userPrompt
+          ) ||
+          /instagram caption/i.test(
+            userPrompt
+          ) ||
+          /facebook caption/i.test(
+            userPrompt
+          );
 
         const systemPrompt = `
 You are AI Business Helper, a professional AI writing assistant for small businesses.
@@ -205,6 +451,7 @@ Do not use promotional claims such as:
 "comforting"
 "pleasant aroma"
 "gentle glow"
+
 unless the user explicitly supplied those facts.
 
 NEVER add hashtags unless the user explicitly asks for hashtags.
@@ -216,46 +463,59 @@ Do not invent specifications, benefits, quality claims, ingredients, materials o
 Return ONLY the final usable content.
 `;
 
-        const result = await env.AI.run(
-          "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-          {
-            messages: [
-              {
-                role: "system",
-                content: systemPrompt
-              },
-              {
-                role: "user",
-                content: userPrompt
-              }
-            ],
-            max_tokens: 220,
-            temperature: 0.05,
-            top_p: 0.85,
-            repetition_penalty: 1.05
-          }
-        );
+        const result =
+          await env.AI.run(
+            "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+            {
+              messages: [
+                {
+                  role: "system",
+                  content: systemPrompt
+                },
+                {
+                  role: "user",
+                  content: userPrompt
+                }
+              ],
+              max_tokens: 220,
+              temperature: 0.05,
+              top_p: 0.85,
+              repetition_penalty: 1.05
+            }
+          );
 
         let responseText =
           result?.response?.trim() ||
           "Sorry, I could not generate a response.";
 
-        responseText = responseText
-          .replace(/^["']+/, "")
-          .replace(/["']+$/, "")
-          .replace(/^OUTPUT:\s*/i, "")
-          .replace(/^Here is the reply:\s*/i, "")
-          .replace(/^Here is your reply:\s*/i, "")
-          .replace(/^Here is the response:\s*/i, "")
-          .replace(/^Here is your response:\s*/i, "")
-          .trim();
+        responseText =
+          responseText
+            .replace(/^["']+/, "")
+            .replace(/["']+$/, "")
+            .replace(/^OUTPUT:\s*/i, "")
+            .replace(
+              /^Here is the reply:\s*/i,
+              ""
+            )
+            .replace(
+              /^Here is your reply:\s*/i,
+              ""
+            )
+            .replace(
+              /^Here is the response:\s*/i,
+              ""
+            )
+            .replace(
+              /^Here is your response:\s*/i,
+              ""
+            )
+            .trim();
 
         /*
          * SOCIAL CAPTION SAFETY CHECK
          */
 
         if (isSocialCaption) {
-
           const unsafePatterns = [
             /\bcarefully crafted\b/i,
             /\bhigh[- ]quality\b/i,
@@ -281,14 +541,20 @@ Return ONLY the final usable content.
           ];
 
           const hasUnsafeClaim =
-            unsafePatterns.some(pattern =>
-              pattern.test(responseText)
+            unsafePatterns.some(
+              pattern =>
+                pattern.test(responseText)
             );
 
           const hasHashtags =
-            /(^|\s)#[a-z0-9_]+/i.test(responseText);
+            /(^|\s)#[a-z0-9_]+/i.test(
+              responseText
+            );
 
-          if (hasUnsafeClaim || hasHashtags) {
+          if (
+            hasUnsafeClaim ||
+            hasHashtags
+          ) {
             responseText =
               "Handmade and scented candles. Discover our collection.";
           }
@@ -322,10 +588,15 @@ Return ONLY the final usable content.
         );
 
       } catch (error) {
+        console.error(
+          "AI generation failed:",
+          error
+        );
 
         return Response.json(
           {
-            error: "AI generation failed. Please try again."
+            error:
+              "AI generation failed. Please try again."
           },
           {
             status: 500,
@@ -336,6 +607,12 @@ Return ONLY the final usable content.
         );
       }
     }
+
+    /*
+     * ============================================================
+     * STATIC WEBSITE
+     * ============================================================
+     */
 
     return env.ASSETS.fetch(request);
   }
