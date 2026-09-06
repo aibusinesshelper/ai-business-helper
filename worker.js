@@ -43,6 +43,49 @@ export default {
           );
         }
 
+        /*
+         * FREE DAILY LIMIT
+         * 5 generations per IP per day
+         */
+
+        const ip =
+          request.headers.get("CF-Connecting-IP") || "unknown";
+
+        const day = new Date().toISOString().slice(0, 10);
+
+        const rawKey = `free:${ip}:${day}`;
+
+        const digest = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(rawKey)
+        );
+
+        const hash = Array.from(new Uint8Array(digest))
+          .map(b => b.toString(16).padStart(2, "0"))
+          .join("");
+
+        const usageKey = `usage:${hash}`;
+
+        let count = Number(
+          await env.AI_LIMITS.get(usageKey) || "0"
+        );
+
+        if (count >= 5) {
+          return Response.json(
+            {
+              error:
+                "Free limit reached. You have used 5 generations today. Please try again tomorrow or upgrade to Pro."
+            },
+            {
+              status: 429,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "application/json"
+              }
+            }
+          );
+        }
+
         const isSocialCaption =
           /social media caption generator/i.test(userPrompt) ||
           /instagram caption/i.test(userPrompt) ||
@@ -189,11 +232,8 @@ Return ONLY the final usable content.
 
         /*
          * SOCIAL CAPTION SAFETY CHECK
-         *
-         * If the model adds unsupported promotional/factual
-         * claims, replace the generated caption with a safe
-         * fallback instead of showing unreliable information.
          */
+
         if (isSocialCaption) {
 
           const unsafePatterns = [
@@ -234,9 +274,23 @@ Return ONLY the final usable content.
           }
         }
 
+        /*
+         * INCREMENT USAGE ONLY AFTER
+         * SUCCESSFUL AI GENERATION
+         */
+
+        await env.AI_LIMITS.put(
+          usageKey,
+          String(count + 1),
+          {
+            expirationTtl: 172800
+          }
+        );
+
         return Response.json(
           {
-            response: responseText
+            response: responseText,
+            remaining: 4 - count
           },
           {
             status: 200,
@@ -248,6 +302,7 @@ Return ONLY the final usable content.
         );
 
       } catch (error) {
+
         return Response.json(
           {
             error: "AI generation failed. Please try again."
