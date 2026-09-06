@@ -22,16 +22,14 @@ export default {
           console.error("PADDLE_WEBHOOK_SECRET is missing");
 
           return Response.json(
-            { error: "Webhook secret is not configured" },
-            { status: 500 }
+            {
+              error: "Webhook secret is not configured"
+            },
+            {
+              status: 500
+            }
           );
         }
-
-        /*
-         * IMPORTANT:
-         * Paddle signature verification requires the RAW body.
-         * Do not use request.json() before verification.
-         */
 
         const rawBody = await request.text();
 
@@ -40,13 +38,17 @@ export default {
 
         if (!signatureHeader) {
           return Response.json(
-            { error: "Missing Paddle-Signature header" },
-            { status: 401 }
+            {
+              error: "Missing Paddle-Signature header"
+            },
+            {
+              status: 401
+            }
           );
         }
 
         /*
-         * Paddle-Signature format:
+         * Paddle-Signature:
          * ts=UNIX_TIMESTAMP;h1=HEX_SIGNATURE
          */
 
@@ -72,83 +74,109 @@ export default {
 
         if (!timestamp || !signature) {
           return Response.json(
-            { error: "Invalid Paddle-Signature header" },
-            { status: 401 }
+            {
+              error: "Invalid Paddle-Signature header"
+            },
+            {
+              status: 401
+            }
           );
         }
 
         /*
-         * Reject very old webhook requests.
-         * Paddle recommends a short timestamp tolerance
-         * to protect against replay attacks.
+         * Reject old webhook requests.
          */
 
-        const currentTime = Math.floor(Date.now() / 1000);
-        const webhookTime = Number(timestamp);
+        const currentTime =
+          Math.floor(Date.now() / 1000);
+
+        const webhookTime =
+          Number(timestamp);
 
         if (
           !Number.isFinite(webhookTime) ||
           Math.abs(currentTime - webhookTime) > 300
         ) {
           return Response.json(
-            { error: "Webhook timestamp expired" },
-            { status: 408 }
+            {
+              error: "Webhook timestamp expired"
+            },
+            {
+              status: 408
+            }
           );
         }
 
         /*
-         * Build the signed payload:
+         * Paddle signed payload:
          * timestamp + ":" + raw body
          */
 
-        const signedPayload = `${timestamp}:${rawBody}`;
+        const signedPayload =
+          `${timestamp}:${rawBody}`;
+
+        const keyData =
+          new TextEncoder().encode(secret);
+
+        const messageData =
+          new TextEncoder().encode(
+            signedPayload
+          );
+
+        const cryptoKey =
+          await crypto.subtle.importKey(
+            "raw",
+            keyData,
+            {
+              name: "HMAC",
+              hash: "SHA-256"
+            },
+            false,
+            ["sign"]
+          );
+
+        const signatureBuffer =
+          await crypto.subtle.sign(
+            "HMAC",
+            cryptoKey,
+            messageData
+          );
+
+        const computedSignature =
+          Array.from(
+            new Uint8Array(signatureBuffer)
+          )
+            .map(
+              b =>
+                b.toString(16).padStart(2, "0")
+            )
+            .join("");
 
         /*
-         * HMAC SHA-256
-         */
-
-        const keyData = new TextEncoder().encode(secret);
-        const messageData = new TextEncoder().encode(signedPayload);
-
-        const cryptoKey = await crypto.subtle.importKey(
-          "raw",
-          keyData,
-          {
-            name: "HMAC",
-            hash: "SHA-256"
-          },
-          false,
-          ["sign"]
-        );
-
-        const signatureBuffer = await crypto.subtle.sign(
-          "HMAC",
-          cryptoKey,
-          messageData
-        );
-
-        const computedSignature = Array.from(
-          new Uint8Array(signatureBuffer)
-        )
-          .map(b => b.toString(16).padStart(2, "0"))
-          .join("");
-
-        /*
-         * Timing-safe comparison
+         * Timing-safe comparison.
          */
 
         if (
-          computedSignature.length !== signature.length
+          computedSignature.length !==
+          signature.length
         ) {
           return Response.json(
-            { error: "Invalid signature" },
-            { status: 401 }
+            {
+              error: "Invalid signature"
+            },
+            {
+              status: 401
+            }
           );
         }
 
         let difference = 0;
 
-        for (let i = 0; i < computedSignature.length; i++) {
+        for (
+          let i = 0;
+          i < computedSignature.length;
+          i++
+        ) {
           difference |=
             computedSignature.charCodeAt(i) ^
             signature.charCodeAt(i);
@@ -156,20 +184,27 @@ export default {
 
         if (difference !== 0) {
           return Response.json(
-            { error: "Invalid signature" },
-            { status: 401 }
+            {
+              error: "Invalid signature"
+            },
+            {
+              status: 401
+            }
           );
         }
 
         /*
-         * Signature is valid.
-         * Now we can safely parse the webhook.
+         * Signature verified.
          */
 
-        const payload = JSON.parse(rawBody);
+        const payload =
+          JSON.parse(rawBody);
 
-        const eventType = payload.event_type;
-        const data = payload.data || {};
+        const eventType =
+          payload.event_type;
+
+        const data =
+          payload.data || {};
 
         console.log(
           "Verified Paddle webhook:",
@@ -177,11 +212,9 @@ export default {
         );
 
         /*
-         * Store subscription information.
-         *
-         * We use the existing AI_LIMITS KV namespace for now.
-         * This records the authoritative Paddle subscription
-         * status for future Pro access handling.
+         * ========================================================
+         * SAVE SUBSCRIPTION
+         * ========================================================
          */
 
         if (
@@ -190,31 +223,76 @@ export default {
           eventType === "subscription.updated" ||
           eventType === "subscription.canceled"
         ) {
-          const subscriptionId = data.id;
+          const subscriptionId =
+            data.id;
 
           if (subscriptionId) {
+            const customData =
+              data.custom_data || {};
+
+            const userId =
+              customData.user_id ||
+              null;
+
+            const priceId =
+              data.items?.[0]?.price?.id ||
+              null;
+
+            const productId =
+              data.items?.[0]?.price?.product_id ||
+              null;
+
+            const status =
+              data.status ||
+              null;
+
             const subscriptionRecord = {
-              subscriptionId: subscriptionId,
-              customerId: data.customer_id || null,
-              status: data.status || null,
-              priceId:
-                data.items?.[0]?.price?.id || null,
-              productId:
-                data.items?.[0]?.price?.product_id || null,
-              customData: data.custom_data || null,
-              updatedAt: new Date().toISOString()
+              subscriptionId,
+              customerId:
+                data.customer_id || null,
+              status,
+              priceId,
+              productId,
+              userId,
+              customData,
+              updatedAt:
+                new Date().toISOString()
             };
+
+            /*
+             * Save by subscription ID.
+             */
 
             await env.AI_LIMITS.put(
               `paddle:subscription:${subscriptionId}`,
-              JSON.stringify(subscriptionRecord)
+              JSON.stringify(
+                subscriptionRecord
+              )
+            );
+
+            /*
+             * Save a direct user subscription
+             * record when user_id exists.
+             */
+
+            if (userId) {
+              await env.AI_LIMITS.put(
+                `paddle:user:${userId}`,
+                JSON.stringify(
+                  subscriptionRecord
+                )
+              );
+            }
+
+            console.log(
+              "Paddle subscription saved:",
+              subscriptionId,
+              userId,
+              status,
+              priceId
             );
           }
         }
-
-        /*
-         * Paddle expects a successful HTTP 200 response.
-         */
 
         return Response.json(
           {
@@ -235,13 +313,79 @@ export default {
 
         return Response.json(
           {
-            error: "Webhook processing failed"
+            error:
+              "Webhook processing failed"
           },
           {
             status: 500
           }
         );
       }
+    }
+
+    /*
+     * ============================================================
+     * SESSION
+     * ============================================================
+     *
+     * Creates a browser-side anonymous user ID.
+     *
+     * This ID will later be passed to Paddle customData.
+     */
+
+    if (url.pathname === "/api/session") {
+      if (request.method !== "GET") {
+        return new Response(
+          "Method Not Allowed",
+          {
+            status: 405
+          }
+        );
+      }
+
+      const existingCookie =
+        request.headers.get("Cookie") || "";
+
+      const match =
+        existingCookie.match(
+          /abh_user_id=([^;]+)/
+        );
+
+      let userId =
+        match?.[1] || "";
+
+      if (!userId) {
+        const bytes =
+          new Uint8Array(16);
+
+        crypto.getRandomValues(bytes);
+
+        userId =
+          Array.from(bytes)
+            .map(
+              b =>
+                b.toString(16)
+                  .padStart(2, "0")
+            )
+            .join("");
+      }
+
+      return new Response(
+        JSON.stringify({
+          user_id: userId
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type":
+              "application/json",
+            "Access-Control-Allow-Origin":
+              "*",
+            "Set-Cookie":
+              `abh_user_id=${userId}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`
+          }
+        }
+      );
     }
 
     /*
@@ -256,23 +400,30 @@ export default {
         return new Response(null, {
           headers: {
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type"
+            "Access-Control-Allow-Methods":
+              "POST, OPTIONS",
+            "Access-Control-Allow-Headers":
+              "Content-Type, X-User-ID"
           }
         });
       }
 
       if (request.method !== "POST") {
-        return new Response("Method Not Allowed", {
-          status: 405,
-          headers: {
-            "Access-Control-Allow-Origin": "*"
+        return new Response(
+          "Method Not Allowed",
+          {
+            status: 405,
+            headers: {
+              "Access-Control-Allow-Origin":
+                "*"
+            }
           }
-        });
+        );
       }
 
       try {
-        const body = await request.json();
+        const body =
+          await request.json();
 
         const userPrompt =
           typeof body.prompt === "string"
@@ -282,28 +433,96 @@ export default {
         if (!userPrompt) {
           return Response.json(
             {
-              error: "Please enter your request."
+              error:
+                "Please enter your request."
             },
             {
               status: 400,
               headers: {
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin":
+                  "*"
               }
             }
           );
         }
 
         /*
+         * ========================================================
+         * USER ID
+         * ========================================================
+         */
+
+        const userId =
+          request.headers.get(
+            "X-User-ID"
+          ) || "";
+
+        /*
+         * ========================================================
+         * CHECK PAID SUBSCRIPTION
+         * ========================================================
+         */
+
+        let isPaidUser = false;
+        let subscription = null;
+
+        if (userId) {
+          const stored =
+            await env.AI_LIMITS.get(
+              `paddle:user:${userId}`
+            );
+
+          if (stored) {
+            try {
+              subscription =
+                JSON.parse(stored);
+
+              const activeStatuses = [
+                "active",
+                "trialing"
+              ];
+
+              const paidPrices = [
+                "pri_01m1tpwzvtptdnf37737p07dbg",
+                "pri_01m1tqvehc5sg5k1nqmk5ree3e"
+              ];
+
+              if (
+                activeStatuses.includes(
+                  subscription.status
+                ) &&
+                paidPrices.includes(
+                  subscription.priceId
+                )
+              ) {
+                isPaidUser = true;
+              }
+            } catch (error) {
+              console.error(
+                "Subscription record parse failed:",
+                error
+              );
+            }
+          }
+        }
+
+        /*
+         * ========================================================
          * FREE DAILY LIMIT
-         * 5 generations per IP per day
+         * ========================================================
+         *
+         * Paid users bypass this limit.
          */
 
         const ip =
-          request.headers.get("CF-Connecting-IP") ||
-          "unknown";
+          request.headers.get(
+            "CF-Connecting-IP"
+          ) || "unknown";
 
         const day =
-          new Date().toISOString().slice(0, 10);
+          new Date()
+            .toISOString()
+            .slice(0, 10);
 
         const rawKey =
           `free:${ip}:${day}`;
@@ -311,40 +530,59 @@ export default {
         const digest =
           await crypto.subtle.digest(
             "SHA-256",
-            new TextEncoder().encode(rawKey)
+            new TextEncoder().encode(
+              rawKey
+            )
           );
 
         const hash =
-          Array.from(new Uint8Array(digest))
+          Array.from(
+            new Uint8Array(digest)
+          )
             .map(
-              b => b.toString(16).padStart(2, "0")
+              b =>
+                b.toString(16)
+                  .padStart(2, "0")
             )
             .join("");
 
         const usageKey =
           `usage:${hash}`;
 
-        let count =
-          Number(
-            await env.AI_LIMITS.get(usageKey) ||
-            "0"
-          );
+        let count = 0;
 
-        if (count >= 5) {
-          return Response.json(
-            {
-              error:
-                "Free limit reached. You have used 5 generations today. Please try again tomorrow or upgrade to Pro."
-            },
-            {
-              status: 429,
-              headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Content-Type": "application/json"
+        if (!isPaidUser) {
+          count =
+            Number(
+              await env.AI_LIMITS.get(
+                usageKey
+              ) || "0"
+            );
+
+          if (count >= 5) {
+            return Response.json(
+              {
+                error:
+                  "Free limit reached. You have used 5 generations today. Please try again tomorrow or upgrade to Pro."
+              },
+              {
+                status: 429,
+                headers: {
+                  "Access-Control-Allow-Origin":
+                    "*",
+                  "Content-Type":
+                    "application/json"
+                }
               }
-            }
-          );
+            );
+          }
         }
+
+        /*
+         * ========================================================
+         * TOOL DETECTION
+         * ========================================================
+         */
 
         const isSocialCaption =
           /social media caption generator/i.test(
@@ -356,6 +594,12 @@ export default {
           /facebook caption/i.test(
             userPrompt
           );
+
+        /*
+         * ========================================================
+         * SYSTEM PROMPT
+         * ========================================================
+         */
 
         const systemPrompt = `
 You are AI Business Helper, a professional AI writing assistant for small businesses.
@@ -458,10 +702,17 @@ NEVER add hashtags unless the user explicitly asks for hashtags.
 
 PRODUCT DESCRIPTION GENERATOR:
 Use only facts explicitly provided by the user.
+
 Do not invent specifications, benefits, quality claims, ingredients, materials or performance.
 
 Return ONLY the final usable content.
 `;
+
+        /*
+         * ========================================================
+         * CLOUDFLARE AI
+         * ========================================================
+         */
 
         const result =
           await env.AI.run(
@@ -492,7 +743,10 @@ Return ONLY the final usable content.
           responseText
             .replace(/^["']+/, "")
             .replace(/["']+$/, "")
-            .replace(/^OUTPUT:\s*/i, "")
+            .replace(
+              /^OUTPUT:\s*/i,
+              ""
+            )
             .replace(
               /^Here is the reply:\s*/i,
               ""
@@ -512,10 +766,13 @@ Return ONLY the final usable content.
             .trim();
 
         /*
+         * ========================================================
          * SOCIAL CAPTION SAFETY CHECK
+         * ========================================================
          */
 
         if (isSocialCaption) {
+
           const unsafePatterns = [
             /\bcarefully crafted\b/i,
             /\bhigh[- ]quality\b/i,
@@ -543,7 +800,9 @@ Return ONLY the final usable content.
           const hasUnsafeClaim =
             unsafePatterns.some(
               pattern =>
-                pattern.test(responseText)
+                pattern.test(
+                  responseText
+                )
             );
 
           const hasHashtags =
@@ -561,33 +820,48 @@ Return ONLY the final usable content.
         }
 
         /*
-         * INCREMENT USAGE ONLY AFTER
-         * SUCCESSFUL AI GENERATION
+         * ========================================================
+         * INCREMENT FREE USAGE
+         * ========================================================
+         *
+         * Paid users do NOT consume free credits.
          */
 
-        await env.AI_LIMITS.put(
-          usageKey,
-          String(count + 1),
-          {
-            expirationTtl: 172800
-          }
-        );
+        if (!isPaidUser) {
+          await env.AI_LIMITS.put(
+            usageKey,
+            String(count + 1),
+            {
+              expirationTtl: 172800
+            }
+          );
+        }
 
         return Response.json(
           {
             response: responseText,
-            remaining: 4 - count
+
+            paid:
+              isPaidUser,
+
+            remaining:
+              isPaidUser
+                ? null
+                : 4 - count
           },
           {
             status: 200,
             headers: {
-              "Access-Control-Allow-Origin": "*",
-              "Content-Type": "application/json"
+              "Access-Control-Allow-Origin":
+                "*",
+              "Content-Type":
+                "application/json"
             }
           }
         );
 
       } catch (error) {
+
         console.error(
           "AI generation failed:",
           error
@@ -601,7 +875,8 @@ Return ONLY the final usable content.
           {
             status: 500,
             headers: {
-              "Access-Control-Allow-Origin": "*"
+              "Access-Control-Allow-Origin":
+                "*"
             }
           }
         );
